@@ -1,0 +1,239 @@
+@extends('admin.layouts.master')
+
+@section('content')
+<div class="container-fluid py-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0"><i class="fas fa-list-alt me-2"></i>Budget Allocation Form</h4>
+        </div>
+
+        <div class="card-body">
+
+              @if (session('success'))
+                <div class="alert alert-success">
+                    {{ session('success') }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            @endif
+
+            @if (session('error'))
+                <div class="alert alert-danger">
+                    {{ session('error') }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            @endif
+            <form action="{{ route('admin.budgets.store') }}" method="POST" id="budget-form">
+                @csrf
+
+                {{-- Programme Selection --}}
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Select Programme</label>
+                        <select id="programme" name="programme_id" class="form-select" required>
+                            <option value="">-- Select Programme --</option>
+                            @foreach($programmes as $programme)
+                                <option value="{{ $programme->id }}">{{ $programme->title }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                {{-- Programme Info --}}
+                <div id="programme-info" class="mb-4" style="display: none;">
+                    <h5 class="text-primary">Programme Details</h5>
+                    <ul class="list-group">
+                        <li class="list-group-item"><strong>Title:</strong> <span id="prog-title"></span></li>
+                        <li class="list-group-item"><strong>Duration:</strong> <span id="prog-duration"></span></li>
+                        <li class="list-group-item"><strong>Strength:</strong> <span id="prog-strength"></span></li>
+                        <li class="list-group-item"><strong>Venue:</strong> <span id="prog-venue"></span></li>
+                        <li class="list-group-item"><strong>Dates:</strong> <span id="prog-dates"></span></li>
+                    </ul>
+                </div>
+
+                {{-- Menu Selection --}}
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label class="form-label fw-bold">Select Menus</label>
+                            <select id="menus" class="form-select" multiple>
+                                @foreach($menus as $menu)
+                                    <option value="{{ $menu->id }}">{{ $menu->name }}</option>
+                                @endforeach
+                            </select>
+                            <small class="text-muted">Hold Ctrl/Cmd to select multiple menus</small>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Submenus --}}
+                <div id="menu-submenu-section" class="mt-4"></div>
+
+                {{-- Submit Button --}}
+                <div class="text-end mt-4">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save me-1"></i> Save Budget Allocation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endsection
+
+@push('styles')
+<style>
+    .card {
+        border-radius: 12px;
+        overflow: hidden;
+        border: none;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    .card-header {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid rgba(255,255,255,0.2);
+    }
+    select[multiple] {
+        min-height: 150px;
+        padding: 10px;
+    }
+    .menu-card {
+        border-left: 4px solid #4e73df;
+        transition: all 0.3s ease;
+    }
+    .menu-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+    }
+    .table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        color: #4e73df;
+    }
+    .total-cell {
+        font-weight: 600;
+        color: #2e59d9;
+    }
+    .form-control:focus {
+        border-color: #4e73df;
+        box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+    }
+</style>
+@endpush
+
+@push('scripts')
+<script>
+$(document).ready(function () {
+    // Programme Info Load
+    $('#programme').change(function () {
+        const programmeId = $(this).val();
+        if (!programmeId) {
+            $('#programme-info').hide();
+            return;
+        }
+
+        $.get(`/admin/programmes/${programmeId}/details`, function (data) {
+            $('#prog-title').text(data.title);
+            $('#prog-duration').text(data.duration);
+            $('#prog-strength').text(data.strength);
+            $('#prog-venue').text(data.venue);
+            $('#prog-dates').text(data.dates);
+            $('#programme-info').show();
+        });
+    });
+
+    // Menu Selection & Load Submenus
+    $('#menus').change(function () {
+        const selectedMenuIds = $(this).val() || [];
+        $('#menu-submenu-section').empty();
+
+        if (selectedMenuIds.length === 0) {
+            $('#menu-submenu-section').html(`
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle me-2"></i> Please select at least one menu
+                </div>
+            `);
+            return;
+        }
+
+        $('#menu-submenu-section').html(`
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading menu details...</p>
+            </div>
+        `);
+
+        selectedMenuIds.forEach(menuId => {
+            $.get(`/admin/menus/${menuId}/submenus`, function (submenus) {
+                let html = `
+                    <div class="card menu-card mb-4">
+                        <div class="card-header">
+                            <strong>${submenus[0]?.menu_name || 'Menu'}</strong>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Submenu</th>
+                                            <th>Price</th>
+                                            <th>Quantity</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                `;
+
+                submenus.forEach((submenu, index) => {
+                    const group = `${menuId}-${index}`;
+                    html += `
+                        <tr>
+                            <td>
+                                ${submenu.name}
+                                <input type="hidden" name="budgets[${group}][menu_id]" value="${menuId}">
+                                <input type="hidden" name="budgets[${group}][submenu_id]" value="${submenu.id}" class="dynamic-budget-input">
+                            </td>
+                            <td>
+                                <input type="number" class="form-control price" name="budgets[${group}][price]"
+                                    data-group="${group}" min="0" step="0.01" required>
+                            </td>
+                            <td>
+                                <input type="number" class="form-control quantity" name="budgets[${group}][quantity]"
+                                    data-group="${group}" min="0" required>
+                            </td>
+                            <td>
+                                <input type="text" class="form-control total" name="budgets[${group}][total]"
+                                    data-group="${group}" readonly>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                $('#menu-submenu-section').append(html);
+            });
+        });
+    });
+
+    // Auto calculate total = price * quantity
+    $(document).on('input', '.price, .quantity', function () {
+        const group = $(this).data('group');
+        const price = parseFloat($(`.price[data-group="${group}"]`).val()) || 0;
+        const quantity = parseInt($(`.quantity[data-group="${group}"]`).val()) || 0;
+        $(`.total[data-group="${group}"]`).val((price * quantity).toFixed(2));
+    });
+});
+</script>
+@endpush

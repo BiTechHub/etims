@@ -1,0 +1,474 @@
+@extends('admin.layouts.master')
+@section('title', 'Search Participants')
+
+@push('styles')
+<link rel="stylesheet" href="{{ asset('assets/datatables/css/jquery.dataTables.min.css') }}">
+<style>
+  .search-panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+  .search-panel .form-group {
+    flex: 1 1 200px;
+  }
+  .status-bar, .attendance-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    background: #e8f9f9;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+  }
+  .status-bar .btn, .attendance-bar .btn {
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 0.75rem 1.2rem;
+    transition: transform .2s, box-shadow .2s;
+    cursor: pointer;
+  }
+  .btn-confirm { background: #7fc242; color: #fff; }
+  .btn-regret  { background: #e05c38; color: #fff; }
+  .btn-cancel  { background: #f3a11f; color: #fff; }
+  .btn-pending { background: #333;    color: #fff; }
+  .btn-mark    { background: #7fc242; color: #fff; }
+  .btn-clear   { background: #e05c38; color: #fff; }
+  .btn-email   { background: #3490dc; color: #fff; }
+  .btn-email-r { background: #333;    color: #fff; }
+
+  .table-responsive {
+    min-height: 300px;
+    position: relative;
+  }
+  #participants-table {
+    width: 100% !important;
+  }
+  .loading-indicator {
+    display: none;
+    text-align: center;
+    padding: 20px;
+    background: rgba(255,255,255,0.8);
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 100;
+  } .table-container {
+            margin: 40px auto;
+            padding: 20px;
+            border-radius: 16px;
+
+            font-size: 16px;
+            background: #ffffff;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            /* text-align: center; Ensures the table content is centered */
+        }
+
+        #participants-table {
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 0 auto;
+            /* Ensures table is centered within the container */
+        }
+
+        /* Table Header */
+        #participants-table thead {
+            background: linear-gradient(135deg, #2c3e50, #4a6491);
+            color: white;
+            font-weight: bold;
+        }
+
+        #participants-table thead th {
+            padding: 15px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: none;
+            position: relative;
+            text-align: center;
+            /* Center the header text */
+        }
+
+        /* Table Body */
+        #participants-table tbody tr {
+            transition: all 0.2s ease;
+            background: white;
+        }
+
+        #participants-table tbody tr:nth-child(even) {
+            background: #f9fafc;
+        }
+
+        #participants-table tbody tr:hover {
+            background: #f1f7fe;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        #participants-table tbody td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eef2f7;
+            vertical-align: middle;
+            text-align: center;
+            /* Center the content in the table cells */
+        }
+
+        #participants-table thead {
+            background: linear-gradient(135deg, #2c3e50, #4a6491);
+            color: white;
+        }
+
+        #participants-table thead th {
+            padding: 15px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: none;
+            position: relative;
+        }
+
+        #participants-table thead th:not(:last-child)::after {
+            content: "";
+            position: absolute;
+            right: 0;
+            top: 25%;
+            height: 50%;
+            width: 1px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        #participants-table tbody tr {
+            transition: all 0.2s ease;
+            background: white;
+        }
+
+        #participants-table tbody tr:nth-child(even) {
+            background: #f9fafc;
+        }
+
+        #participants-table tbody tr:hover {
+            background: #f1f7fe;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        #participants-table tbody td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eef2f7;
+            vertical-align: middle;
+        }
+
+</style>
+@endpush
+
+@section('content')
+<div class="container-fluid" style="margin-top:20px">
+  <div class="search-panel">
+    <div class="form-group">
+      <label for="cal_year">Cal. Year</label>
+      <select class="form-control" id="cal_year" name="cal_year" required>
+        <option value="">Select Calendar Year</option>
+        @foreach($distinctYears as $year)
+          <option value="{{ $year }}">{{ $year }}</option>
+        @endforeach
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="programme_id">Programme</label>
+      <select id="programme_id" class="form-control">
+        <option value="">Select Programme…</option>
+        @foreach($programmes as $prog)
+          <option value="{{ $prog->id }}" data-year="{{ $prog->financial_year }}">
+            {{ $prog->code }} – {{ Str::limit($prog->title, 50) }}
+          </option>
+        @endforeach
+      </select>
+    </div>
+  </div>
+
+
+
+  <div class="attendance-bar mt-2">
+    <label>Manage Attendance :</label>
+    <button class="btn btn-mark" id="btn-mark">Mark Attendance</button>
+    <button class="btn btn-clear" id="btn-clear">Clear Attendance</button>
+    <button class="btn btn-email" id="btn-email">Confirm By Email</button>
+    <button class="btn btn-email-r" id="btn-email-r">Regret By Email</button>
+
+  </div>
+  <div id="datetime-picker" style="display: none;" class="form-inline mb-4">
+    <label class="mr-2">Select Date:</label>
+    <input type="date" id="attend_date" class="form-control mr-3">
+  
+    <label class="mr-2">Select Time:</label>
+    <input type="time" id="attend_time" class="form-control mr-3">
+  
+    <button class="btn btn-success" id="btn-update-datetime">Checkout</button>
+  </div>
+  
+
+  <div class="table-responsive mb-4">
+    <div id="loading-indicator" class="loading-indicator">
+      <i class="fas fa-spinner fa-spin"></i> Loading data...
+    </div>
+    <table id="participants-table" class="table table-bordered">
+      <thead class="thead-light">
+        <tr>
+          <th><input type="checkbox" id="select-all"></th>
+          <th>Participant Name</th>
+          <th>Designation</th>
+          <th>Nominating Agency</th>
+          <th>City</th>
+          <th>Email/Phone</th>
+          <th>Status</th>
+          <th>Hostel Checkedin</th>
+          <th>Hostel Checkout</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+<!-- Modal -->
+
+
+@endsection
+
+@push('scripts')
+
+<script>
+$(function () {
+  const yearSelect = $('#cal_year');
+  const programmeSelect = $('#programme_id');
+  const loading = $('#loading-indicator');
+  const tableElem = $('#participants-table');
+  let selectedParticipants = [];
+
+  const table = tableElem.DataTable({
+    ajax: {
+      url: '{{ route("admin.nominations.byProgramme") }}',
+      dataSrc: 'data',
+      data: d => {
+        d.programme_id = programmeSelect.val();
+      }
+    },
+    columns: [
+      { data: null, render: data => `<input type="checkbox" class="participant-checkbox" data-id="${data.id}">` },
+      { data: 'name' },
+      {data:'designation'},
+      { 
+        data: 'nomination.agency_type.name',
+        render: function (data) {
+          return data || 'No Agency Type';  // Fallback if agencyType name is not found
+        }
+      },
+      {data:'city'},
+      { 
+        data: null, 
+        render: function (data) {
+          return `${data.email} | ${data.phone}`;  // Combine email and phone in a single column
+        }
+      },
+      {data: 'status', render: function (data) {
+        return data || 'No Status'; // Display 'No Status' if no status is found
+      }},
+      {data: 'hostel_attendence', render: function (data) {
+        return data || 'No Attendence'; // Display 'No Status' if no status is found
+      }},
+
+      {
+  data: null,
+  render: function (data, type, row) {
+    return `${data.checkout_time || 'N/A'}, ${data.date || 'N/A'}`;
+  }
+}
+
+
+    ],
+    language: { emptyTable: 'Select year & programme to load participants' }
+  });
+
+  yearSelect.on('change', () => {
+    const year = yearSelect.val();
+    programmeSelect.find('option[data-year]').each(function () {
+      $(this).toggle($(this).data('year') == year);
+    });
+    programmeSelect.val('');
+    table.clear().draw();
+  });
+
+  programmeSelect.on('change', () => {
+    if (programmeSelect.val()) {
+      loading.show();
+      table.ajax.reload(() => loading.hide());
+    } else {
+      table.clear().draw();
+    }
+  });
+
+  $('#select-all').on('change', function () {
+    $('.participant-checkbox').prop('checked', this.checked);
+    updateSelectedParticipants();
+  });
+
+  tableElem.on('change', '.participant-checkbox', function () {
+    updateSelectedParticipants();
+    $('#select-all').prop('checked', $('.participant-checkbox').length === $('.participant-checkbox:checked').length);
+  });
+
+  function updateSelectedParticipants() {
+    selectedParticipants = $('.participant-checkbox:checked').map(function () {
+      return $(this).data('id');
+    }).get();
+  }
+
+  function performAction(url, data, message) {
+    if (!selectedParticipants.length) return alert('Please select at least one participant.');
+    loading.show();
+    $.post(url, { ...data, participant_ids: selectedParticipants, _token: '{{ csrf_token() }}' })
+      .done(() => {
+        alert(message);
+        table.ajax.reload();
+      })
+      .fail(xhr => alert('Error: ' + xhr.responseText))
+      .always(() => loading.hide());
+  }
+
+  // Handling status update
+ 
+
+
+ 
+});
+
+</script>
+
+<script>
+  $(function () {
+    const tableElem = $('#participants-table');
+    let selectedParticipants = [];
+  
+    // Update selected participants when checkboxes change
+    tableElem.on('change', '.participant-checkbox', function () {
+      selectedParticipants = $('.participant-checkbox:checked').map(function () {
+        return $(this).data('id');
+      }).get();
+    });
+  
+    // Handle Confirm button click
+    $('#btn-mark').on('click', function () {
+      if (selectedParticipants.length === 0) {
+        return alert('Please select at least one participant.');
+      }
+      performAction('Present', ' Attendence updated to Mark.');
+    });
+  
+    // Handle Regret button click
+    $('#btn-clear').on('click', function () {
+      if (selectedParticipants.length === 0) {
+        return alert('Please select at least one participant.');
+      }
+      performAction('Absent', 'Attendence updated to Clear.');
+    });
+  
+    // Handle Cancel button click
+    $('#btn-email').on('click', function () {
+      if (selectedParticipants.length === 0) {
+        return alert('Please select at least one participant.');
+      }
+      performAction('mark by email', 'Attendence updated to mark by email.');
+    });
+  
+    // Handle Pending button click
+    $('#btn-email-r').on('click', function () {
+      if (selectedParticipants.length === 0) {
+        return alert('Please select at least one participant.');
+      }
+      performAction('regret by email', 'Attendence set to regret by email.');
+    });
+  
+    // Perform the action and send data to the server
+    function performAction(status, message) {
+      $.ajax({
+        url: '{{ route("admin.hostel.updateAttendence") }}',
+        type: 'POST',
+        data: {
+          _token: '{{ csrf_token() }}',  
+          participant_ids: selectedParticipants,
+          status: status
+        },
+        success: function () {
+          alert(message);
+          tableElem.DataTable().ajax.reload();
+        },
+        error: function (xhr) {
+          alert('Error: ' + xhr.responseText);
+        }
+      });
+    }
+  });
+  
+  
+  
+  
+  </script>
+
+  <script>
+
+$(function () {
+  const tableElem = $('#participants-table');
+  let selectedParticipants = [];
+
+  // Show datetime picker if any checkbox is selected
+  tableElem.on('change', '.participant-checkbox', function () {
+    selectedParticipants = $('.participant-checkbox:checked').map(function () {
+      return $(this).data('id');
+    }).get();
+
+    $('#datetime-picker').toggle(selectedParticipants.length > 0);
+  });
+
+  // Handle Date & Time update
+  $('#btn-update-datetime').on('click', function () {
+    const date = $('#attend_date').val();
+    const time = $('#attend_time').val();
+
+    if (!selectedParticipants.length) {
+      return alert('Please select at least one participant.');
+    }
+    if (!date || !time) {
+      return alert('Please select both date and time.');
+    }
+
+    $.ajax({
+      url: '{{ route("admin.participants.updateDatetime") }}',
+      method: 'POST',
+      data: {
+        _token: '{{ csrf_token() }}',
+        participant_ids: selectedParticipants,
+        date: date,
+        time: time     
+      },
+      success: function () {
+        alert('Date and Time updated for selected participants.');
+        $('#participants-table').DataTable().ajax.reload();
+        $('#datetime-picker').hide();
+        $('#attend_date').val('');
+        $('#attend_time').val('');
+      },
+      error: function (xhr) {
+        alert('Error: ' + xhr.responseText);
+      }
+    });
+  });
+});
+
+  </script>
+  
+@endpush
