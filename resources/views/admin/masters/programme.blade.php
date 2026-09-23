@@ -1,0 +1,514 @@
+@extends('admin.layouts.master')
+@section('title', 'Programme')
+
+@push('styles')
+<style>
+    /* (Your existing styles) */
+    .container-wrapper {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        width: 100%;
+        box-sizing: border-box;
+        font-size: 18px !important;
+    }
+
+    /* Sidebar Styling */
+    .sidebar {
+        flex: 0 2 250px;
+        background:#349e4c;
+        padding: 20px;
+        border-radius: 16px;
+        color: white;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        box-sizing: border-box;
+    }
+
+    .sidebar-title {
+        font-size: 22px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .sidebar-title i {
+        font-size: 24px;
+        color: #25ba43;
+    }
+
+    /* Form Styling */
+    .form-container {
+        flex: 1 1 auto;
+        background: #fff;
+        padding: 20px;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        box-sizing: border-box;
+        margin-left: 20px;
+    }
+
+    .form-container:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+    }
+
+    .form-title {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* aligns content to the left */
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+    padding: 20px;
+    margin-bottom: 30px;
+    background: linear-gradient(135deg, #1d976c, #027630);
+    border-radius: 12px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.15);
+    transition: background 0.3s ease;
+}
+
+.form-title::before {
+    content: "📝";
+    font-size: 26px;
+    margin-right: 10px;
+}
+
+.form-title:hover {
+    background: linear-gradient(135deg, #1488cc, #2b32b2);
+}
+
+
+
+    /* Table Styling (table style starts here) */
+    /* Table Styling */
+.table-container {
+    margin: 40px auto;
+    padding: 20px;
+    border-radius: 16px;
+   
+    font-size:16px;
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    text-align: center; /* Ensures the table content is centered */
+}
+
+#agency-group-table {
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 0 auto; /* Ensures table is centered within the container */
+}
+
+/* Table Header */
+#agency-group-table thead {
+    background: linear-gradient(135deg, #2c3e50, #4a6491);
+    color: white;
+    font-weight:bold;
+}
+
+#agency-group-table thead th {
+    padding: 15px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: none;
+    position: relative;
+    text-align: center; /* Center the header text */
+}
+
+/* Table Body */
+#agency-group-table tbody tr {
+    transition: all 0.2s ease;
+    background: white;
+}
+
+#agency-group-table tbody tr:nth-child(even) {
+    background: #f9fafc;
+}
+
+#agency-group-table tbody tr:hover {
+    background: #f1f7fe;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+#agency-group-table tbody td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #eef2f7;
+    vertical-align: middle;
+    text-align: center; /* Center the content in the table cells */
+}
+
+    #agency-group-table thead {
+        background: linear-gradient(135deg, #2c3e50, #4a6491);
+        color: white;
+    }
+
+    #agency-group-table thead th {
+        padding: 15px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border: none;
+        position: relative;
+    }
+
+    #agency-group-table thead th:not(:last-child)::after {
+        content: "";
+        position: absolute;
+        right: 0;
+        top: 25%;
+        height: 50%;
+        width: 1px;
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    #agency-group-table tbody tr {
+        transition: all 0.2s ease;
+        background: white;
+    }
+
+    #agency-group-table tbody tr:nth-child(even) {
+        background: #f9fafc;
+    }
+
+    #agency-group-table tbody tr:hover {
+        background: #f1f7fe;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    #agency-group-table tbody td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #eef2f7;
+        vertical-align: middle;
+    }
+
+    /* Badge Styling */
+    .badge {
+        padding: 6px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+    }
+
+    .badge-success {
+        background-color: #28a745;
+    }
+
+    .badge-danger {
+        background-color: #dc3545;
+    }
+
+    /* Button Styling */
+    .btn-action {
+        padding: 6px 12px;
+        font-size: 13px;
+        border-radius: 6px;
+        margin: 2px;
+        transition: all 0.2s;
+    }
+
+    .btn-action:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-primary {
+        background-color: #3490dc;
+        border-color: #3490dc;
+    }
+
+    .btn-danger {
+        background-color: #e3342f;
+        border-color: #e3342f;
+    }
+    .alert {
+    position: relative;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+    transition: opacity 0.15s linear;
+}
+
+.alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+.alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.alert-dismissible {
+    padding-right: 4rem;
+}
+
+.alert-dismissible .close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 0.75rem 1.25rem;
+    color: inherit;
+}
+
+    /* Responsive Adjustments */
+    @media (max-width: 768px) {
+        #agency-group-table thead th {
+            padding: 12px 8px;
+            font-size: 14px;
+        }
+
+        #agency-group-table tbody td {
+            padding: 10px 8px;
+            font-size: 14px;
+        }
+
+        .btn-action {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+    }
+
+    .sidebar {
+        width: 100%;
+        text-align: center;
+    }
+
+    .form-container {
+        margin-left: 0;
+    }
+</style>
+@endpush
+
+@section('content')
+<div class="container-wrapper">
+    <div class="sidebar">
+        <div class="sidebar-title">
+            <i class="fas fa-building"></i> Programme
+        </div>
+        <p>Manage and add new Programme easily.</p>
+    </div>
+
+    <div class="form-container">
+        <h2 class="form-title" id="form-title">➕ Add Programme</h2>
+
+        @if ($errors->any())
+            <div class="alert alert-danger">
+                <ul>
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        @if (session('success'))
+            <div class="alert alert-success">
+                {{ session('success') }}
+            </div>
+        @endif
+
+        <form id="agency-type-form" action="{{ route('programme.store') }}" method="POST">
+            @csrf
+            <div class="row">
+                <!-- Agency Group -->
+                <div class="col-md-4 form-group">
+                    <label for="agency_group" class="form-label">Agency Group <span class="text-danger">*</span></label>
+                    <select class="form-control" id="agency_group" name="agency_group_id" required>
+                        <option value="">Select Agency Group</option>
+                        @foreach ($agencyGroups as $agencyGroup)
+                            <option value="{{ $agencyGroup->id }}" 
+                                {{ old('agency_group_id') == $agencyGroup->id ? 'selected' : '' }}>
+                                {{ $agencyGroup->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            
+                <!-- Name -->
+                <div class="col-md-4 form-group">
+                    <label for="name" class="form-label">Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="name" name="name" placeholder="Enter Name" value="{{ old('name') }}" required>
+                </div>
+            
+                <!-- Target Group -->
+                <div class="col-md-4 form-group">
+                    <label for="target_group" class="form-label">Target Group <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="target_group" name="target_group" placeholder="Enter Target Group" value="{{ old('target_group') }}" required>
+                </div>
+            
+                <!-- Duration (in days) -->
+                <div class="col-md-4 form-group">
+                    <label for="duration" class="form-label">Duration (in days) <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control" id="duration" name="duration" placeholder="Enter Duration" value="{{ old('duration') }}" required>
+                </div>
+            
+                <!-- Content -->
+                <div class="col-md-4 form-group">
+                    <label for="content" class="form-label">Content <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="content" name="content" placeholder="Enter Content" value="{{ old('content') }}" required>
+                </div>
+            
+                <!-- Objective -->
+                <div class="col-md-4 form-group">
+                    <label for="objective" class="form-label">Objective <span class="text-danger">*</span></label>
+                    <textarea class="form-control" id="objective" name="objective" rows="3" placeholder="Enter Objective" required>{{ old('objective') }}</textarea>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-submit w-100">Save programme</button>
+        </form>
+    </div>
+</div>
+
+<div class="table-container">
+    <table id="agency-group-table" class="table table-bordered table-hover">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Agency Group </th>
+                <th>Name</th>
+                <th>Target Group </th>
+                <th>Duration (in days) </th>
+                <th>Content </th>
+                <th>Objective </th>
+                
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+@endsection
+
+@push('scripts')
+<script type="text/javascript">
+  $(document).ready(function() {
+    // CSRF Token setup for AJAX
+    $.ajaxSetup({
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        }
+    });
+
+    // Initialize DataTable
+    const table = $('#agency-group-table').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: '{{ route("programme.getData") }}',
+            type: 'GET'
+        },
+        columns: [
+            { data: 'id', name: 'id' },
+            { data: 'agency_group_id', name: 'agency_group_id' },
+            { data: 'name', name: 'name' },
+            { data: 'target_group', name: 'target_group' },
+            { data: 'duration', name: 'duration' },
+            { data: 'content', name: 'content' },
+            { data: 'objective', name: 'objective' },
+
+            { 
+                data: 'action',
+                name: 'action',
+                orderable: false,
+                searchable: false,
+                render: function(data, type, row) {
+                    return ` 
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-primary btn-action edit-btn" data-id="${row.id}" data-code="${row.agency_group_id}" data-name="${row.name}">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="btn btn-sm btn-danger delete-btn btn-action" data-id="${row.id}">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+        ],
+        responsive: true
+    });
+
+    // Handle edit button click
+    $('#agency-group-table').on('click', '.edit-btn', function() {
+    const id = $(this).data('id');
+    const agency_group_id = $(this).data('agency_group_id');
+    const name = $(this).data('name');
+    const target_group = $(this).data('target_group');
+    const duration = $(this).data('duration');
+    const content = $(this).data('content');
+    const objective = $(this).data('objective');
+
+    // Change form title to "Edit"
+    $('#form-title').text('✏️ Edit Programme');
+
+    // Update the form action to point to the update route
+    $('#agency-type-form').attr('action', '{{ url("admin/programme/edit") }}/' + id);
+
+    // Pre-fill the form with the existing values
+    $('#agency_group').val(agency_group_id);
+    $('#name').val(name);
+    $('#target_group').val(target_group);
+    $('#duration').val(duration);
+    $('#content').val(content);
+    $('#objective').val(objective);
+
+    // Ensure method is set to PUT for editing
+    $('#agency-type-form').append('<input type="hidden" name="_method" value="post">');
+});
+
+
+    // Handle delete button click
+    $('#agency-group-table').on('click', '.delete-btn', function() {
+        var id = $(this).data('id');
+        
+        if (confirm('Are you sure you want to delete this programme?')) {
+            $.ajax({
+                url: '{{ url("admin/programme/delete") }}/' + id,
+                type: 'post',
+                data: {
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function(response) {
+                alert('Deleted!');
+                $('#agency-group-table').DataTable().ajax.reload(null, false);
+            },
+            error: function(xhr) {
+                alert('Error deleting programme');
+            }
+            });
+        }
+    });
+
+    // Helper function to show alerts
+    function showAlert(type, message) {
+        $('#alert-container').html(`
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        `);
+        
+        // Auto-dismiss alert after 5 seconds
+        setTimeout(function() {
+            $('.alert').alert('close');
+        }, 5000);
+    }
+});
+
+</script>
+@endpush
